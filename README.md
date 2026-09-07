@@ -1,2 +1,2 @@
 # SW2627-Nextjs-StockSync
-This is your first repository
+This is  not your first repository.
