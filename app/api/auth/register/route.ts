@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { DataService } from '@/lib/dataService';
 import { hashPassword, signToken } from '@/lib/auth';
+import { sendVerificationEmail } from '@/lib/email';
+import { randomBytes } from 'crypto';
 
 export const dynamic = 'force-dynamic';
 
@@ -12,35 +14,29 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'All fields are required.' }, { status: 400 });
     }
 
-    if (!email.includes('@') || !email.includes('.')) {
+    const normalizedEmail = email.trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
       return NextResponse.json({ error: 'Invalid email address.' }, { status: 400 });
     }
 
-    const existing = await DataService.findManagerByEmail(email);
+    const existing = await DataService.findManagerByEmail(normalizedEmail);
     if (existing) {
       return NextResponse.json({ error: 'A manager with this email already exists.' }, { status: 409 });
     }
 
     const passwordHash = await hashPassword(password);
-    const newManager = await DataService.createManager(name, email, passwordHash);
-
-    const token = signToken({
-      id: newManager.id,
-      name: newManager.name,
-      email: newManager.email,
-    });
+    const newManager = await DataService.createManager(name.trim(), normalizedEmail, passwordHash);
+    const verificationToken = randomBytes(32).toString('hex');
+    await DataService.createEmailVerificationToken(
+      newManager.id,
+      verificationToken,
+      new Date(Date.now() + 24 * 60 * 60 * 1000)
+    );
+    await sendVerificationEmail(newManager.email, newManager.name, verificationToken);
 
     const response = NextResponse.json({
       success: true,
-      manager: { id: newManager.id, name: newManager.name, email: newManager.email },
-    });
-
-    response.cookies.set('stocksync_token', token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      path: '/',
-      maxAge: 60 * 60 * 24 * 7, // 7 days
+      message: 'Account created. Check your email to verify your account before logging in.',
     });
 
     return response;

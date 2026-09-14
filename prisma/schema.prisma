@@ -12,8 +12,23 @@ model Manager {
   name         String
   email        String         @unique
   passwordHash String
+  emailVerifiedAt DateTime?
   createdAt    DateTime       @default(now())
   logs         InventoryLog[]
+  verificationTokens EmailVerificationToken[]
+}
+
+model EmailVerificationToken {
+  id        String   @id @default(uuid())
+  tokenHash String   @unique
+  managerId String
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+
+  manager Manager @relation(fields: [managerId], references: [id], onDelete: Cascade)
+
+  @@index([managerId])
 }
 
 model Product {

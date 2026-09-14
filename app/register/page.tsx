@@ -16,6 +16,7 @@ export default function RegisterPage() {
 
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [generalError, setGeneralError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
   const [loading, setLoading] = useState(false);
 
   const validate = () => {
@@ -56,6 +57,7 @@ export default function RegisterPage() {
     }
 
     setLoading(true);
+    setSuccessMessage('');
     try {
       const res = await fetch('/api/auth/register', {
         method: 'POST',
@@ -70,7 +72,8 @@ export default function RegisterPage() {
         return;
       }
 
-      router.push('/dashboard');
+      setSuccessMessage(data.message || 'Account created. Check your email to verify your account.');
+      setLoading(false);
     } catch {
       setGeneralError('A network error occurred. Please try again.');
       setLoading(false);
@@ -94,6 +97,12 @@ export default function RegisterPage() {
           <div className="mb-6 p-3.5 rounded-xl bg-rose-50 border border-rose-200 flex items-center gap-2 text-sm text-rose-700">
             <AlertCircle className="w-4 h-4 flex-shrink-0" />
             <span>{generalError}</span>
+          </div>
+        )}
+
+        {successMessage && (
+          <div className="mb-6 p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-sm text-emerald-700">
+            {successMessage} <Link href="/login" className="font-semibold underline">Go to login</Link>
           </div>
         )}
 

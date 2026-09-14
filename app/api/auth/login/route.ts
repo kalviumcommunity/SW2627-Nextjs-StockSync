@@ -12,9 +12,16 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Email and password are required.' }, { status: 400 });
     }
 
-    const manager = await DataService.findManagerByEmail(email);
+    const manager = await DataService.findManagerByEmail(email.trim().toLowerCase());
     if (!manager) {
       return NextResponse.json({ error: 'Invalid email or password.' }, { status: 401 });
+    }
+
+    if (!manager.emailVerifiedAt) {
+      return NextResponse.json(
+        { error: 'Please verify your email address before logging in.' },
+        { status: 403 }
+      );
     }
 
     const isValid = await verifyPassword(password, manager.passwordHash);
