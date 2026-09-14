@@ -1,5 +1,6 @@
 import { prisma } from './prisma';
 import bcrypt from 'bcryptjs';
+import { createHash } from 'crypto';
 
 export interface ProductItem {
   id: string;
@@ -29,6 +30,7 @@ export interface ManagerUser {
   name: string;
   email: string;
   passwordHash: string;
+  emailVerifiedAt?: Date | null;
   createdAt?: string | Date;
 }
 
@@ -116,6 +118,10 @@ export const DataService = {
       throw new Error('Stock change amount cannot be zero.');
     }
 
+    if (!process.env.DATABASE_URL) {
+      throw new Error('DATABASE_URL is not configured. Inventory updates require a Supabase database connection.');
+    }
+
     try {
       // 1. Prisma atomic transaction for Concurrency Safety (FR-11)
       const result = await prisma.$transaction(async (tx) => {
@@ -158,36 +164,7 @@ export const DataService = {
       if (err.message === 'Cannot remove more stock than currently available.') {
         throw err;
       }
-      // If PostgreSQL not configured, execute concurrency-safe update on memory store
-      const prod = globalStore._products.find((p) => p.id === productId);
-      if (!prod) throw new Error('Product not found');
-      if (prod.stock + change < 0) {
-        throw new Error('Cannot remove more stock than currently available.');
-      }
-
-      const prev = prod.stock;
-      prod.stock += change;
-
-      const newLog: InventoryLogItem = {
-        id: `log-${Date.now()}`,
-        productId: prod.id,
-        productName: prod.name,
-        managerId,
-        managerName,
-        change,
-        previousStock: prev,
-        newStock: prod.stock,
-        createdAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        status: 'Successful',
-      };
-
-      globalStore._logs.unshift(newLog);
-
-      return {
-        product: { ...prod },
-        previousStock: prev,
-        newStock: prod.stock,
-      };
+      throw new Error(`Inventory update failed: ${err.message || 'database request failed.'}`);
     }
   },
 
@@ -256,6 +233,42 @@ export const DataService = {
       globalStore._managers.push(newMgr);
       return newMgr;
     }
+  },
+
+  async createEmailVerificationToken(managerId: string, token: string, expiresAt: Date) {
+    return prisma.emailVerificationToken.create({
+      data: {
+        managerId,
+        tokenHash: createHash('sha256').update(token).digest('hex'),
+        expiresAt,
+      },
+    });
+  },
+
+  async verifyEmail(token: string) {
+    const tokenHash = createHash('sha256').update(token).digest('hex');
+    return prisma.$transaction(async (tx) => {
+      const record = await tx.emailVerificationToken.findUnique({
+        where: { tokenHash },
+        include: { manager: true },
+      });
+
+      if (!record || record.usedAt || record.expiresAt < new Date()) {
+        throw new Error('This verification link is invalid or has expired.');
+      }
+
+      const manager = await tx.manager.update({
+        where: { id: record.managerId },
+        data: { emailVerifiedAt: new Date() },
+      });
+
+      await tx.emailVerificationToken.update({
+        where: { id: record.id },
+        data: { usedAt: new Date() },
+      });
+
+      return manager;
+    });
   },
 
   async updateManager(id: string, name: string, email: string): Promise<ManagerUser> {
