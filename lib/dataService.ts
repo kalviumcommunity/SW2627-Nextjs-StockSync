@@ -116,6 +116,10 @@ export const DataService = {
       throw new Error('Stock change amount cannot be zero.');
     }
 
+    if (!process.env.DATABASE_URL) {
+      throw new Error('DATABASE_URL is not configured. Inventory updates require a Supabase database connection.');
+    }
+
     try {
       // 1. Prisma atomic transaction for Concurrency Safety (FR-11)
       const result = await prisma.$transaction(async (tx) => {
@@ -158,36 +162,7 @@ export const DataService = {
       if (err.message === 'Cannot remove more stock than currently available.') {
         throw err;
       }
-      // If PostgreSQL not configured, execute concurrency-safe update on memory store
-      const prod = globalStore._products.find((p) => p.id === productId);
-      if (!prod) throw new Error('Product not found');
-      if (prod.stock + change < 0) {
-        throw new Error('Cannot remove more stock than currently available.');
-      }
-
-      const prev = prod.stock;
-      prod.stock += change;
-
-      const newLog: InventoryLogItem = {
-        id: `log-${Date.now()}`,
-        productId: prod.id,
-        productName: prod.name,
-        managerId,
-        managerName,
-        change,
-        previousStock: prev,
-        newStock: prod.stock,
-        createdAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        status: 'Successful',
-      };
-
-      globalStore._logs.unshift(newLog);
-
-      return {
-        product: { ...prod },
-        previousStock: prev,
-        newStock: prod.stock,
-      };
+      throw new Error(`Inventory update failed: ${err.message || 'database request failed.'}`);
     }
   },
 
