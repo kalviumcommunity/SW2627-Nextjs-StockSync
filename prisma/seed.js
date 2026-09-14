@@ -25,14 +25,14 @@ async function main() {
 
   await prisma.manager.upsert({
     where: { email: 'manager.a@example.com' },
-    update: {},
-    create: { id: 'mgr-1', name: 'Manager A', email: 'manager.a@example.com', passwordHash },
+    update: { emailVerifiedAt: new Date() },
+    create: { id: 'mgr-1', name: 'Manager A', email: 'manager.a@example.com', passwordHash, emailVerifiedAt: new Date() },
   });
 
   await prisma.manager.upsert({
     where: { email: 'manager@example.com' },
-    update: {},
-    create: { id: 'mgr-2', name: 'Manager B', email: 'manager@example.com', passwordHash },
+    update: { emailVerifiedAt: new Date() },
+    create: { id: 'mgr-2', name: 'Manager B', email: 'manager@example.com', passwordHash, emailVerifiedAt: new Date() },
   });
 
   for (const prod of initialProducts) {

@@ -1,5 +1,6 @@
 import { prisma } from './prisma';
 import bcrypt from 'bcryptjs';
+import { createHash } from 'crypto';
 
 export interface ProductItem {
   id: string;
@@ -29,6 +30,7 @@ export interface ManagerUser {
   name: string;
   email: string;
   passwordHash: string;
+  emailVerifiedAt?: Date | null;
   createdAt?: string | Date;
 }
 
@@ -231,6 +233,42 @@ export const DataService = {
       globalStore._managers.push(newMgr);
       return newMgr;
     }
+  },
+
+  async createEmailVerificationToken(managerId: string, token: string, expiresAt: Date) {
+    return prisma.emailVerificationToken.create({
+      data: {
+        managerId,
+        tokenHash: createHash('sha256').update(token).digest('hex'),
+        expiresAt,
+      },
+    });
+  },
+
+  async verifyEmail(token: string) {
+    const tokenHash = createHash('sha256').update(token).digest('hex');
+    return prisma.$transaction(async (tx) => {
+      const record = await tx.emailVerificationToken.findUnique({
+        where: { tokenHash },
+        include: { manager: true },
+      });
+
+      if (!record || record.usedAt || record.expiresAt < new Date()) {
+        throw new Error('This verification link is invalid or has expired.');
+      }
+
+      const manager = await tx.manager.update({
+        where: { id: record.managerId },
+        data: { emailVerifiedAt: new Date() },
+      });
+
+      await tx.emailVerificationToken.update({
+        where: { id: record.id },
+        data: { usedAt: new Date() },
+      });
+
+      return manager;
+    });
   },
 
   async updateManager(id: string, name: string, email: string): Promise<ManagerUser> {
