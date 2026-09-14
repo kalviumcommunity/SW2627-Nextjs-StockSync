@@ -245,6 +245,10 @@ export const DataService = {
     });
   },
 
+  async deleteManager(id: string) {
+    return prisma.manager.delete({ where: { id } });
+  },
+
   async verifyEmail(token: string) {
     const tokenHash = createHash('sha256').update(token).digest('hex');
     return prisma.$transaction(async (tx) => {

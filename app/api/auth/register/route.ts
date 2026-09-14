@@ -32,7 +32,12 @@ export async function POST(req: Request) {
       verificationToken,
       new Date(Date.now() + 24 * 60 * 60 * 1000)
     );
-    await sendVerificationEmail(newManager.email, newManager.name, verificationToken);
+    try {
+      await sendVerificationEmail(newManager.email, newManager.name, verificationToken);
+    } catch (emailError) {
+      await DataService.deleteManager(newManager.id);
+      throw emailError;
+    }
 
     const response = NextResponse.json({
       success: true,
@@ -40,7 +45,10 @@ export async function POST(req: Request) {
     });
 
     return response;
-  } catch {
-    return NextResponse.json({ error: 'Server error during registration.' }, { status: 500 });
+  } catch (error) {
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : 'Server error during registration.' },
+      { status: 500 }
+    );
   }
 }
