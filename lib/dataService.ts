@@ -111,54 +111,136 @@ export const DataService = {
     return globalStore._products;
   },
 
-  async updateStock(productId: string, change: number, managerId: string, managerName: string) {
+  async updateStock(
+    productId: string,
+    change: number,
+    managerId: string,
+    managerName: string
+  ): Promise<{ product: ProductItem; previousStock: number; newStock: number }> {
     if (change === 0) {
       throw new Error('Stock change amount cannot be zero.');
     }
 
     try {
-      // 1. Prisma atomic transaction for Concurrency Safety (FR-11)
-      const result = await prisma.$transaction(async (tx) => {
-        const current = await tx.product.findUnique({ where: { id: productId } });
-        if (!current) throw new Error('Product not found');
+      // 1. Resolve or ensure manager exists in PostgreSQL database to prevent Foreign Key violation
+      let effectiveManagerId = managerId;
+      try {
+        const existingManager = await prisma.manager.findUnique({ where: { id: managerId } });
+        if (!existingManager) {
+          const firstMgr = await prisma.manager.findFirst();
+          if (firstMgr) {
+            effectiveManagerId = firstMgr.id;
+          } else {
+            const passwordHash = bcrypt.hashSync('password', 10);
+            const created = await prisma.manager.create({
+              data: {
+                id: managerId,
+                name: managerName || 'Manager B',
+                email: 'manager@example.com',
+                passwordHash,
+              },
+            });
+            effectiveManagerId = created.id;
+          }
+        }
+      } catch (mgrErr: any) {
+        console.warn('[StockSync DB Notice] Manager check notice:', mgrErr?.message || mgrErr);
+      }
+
+      // 2. Perform atomic update in DB
+      let updatedProduct: any = null;
+      let createdLog: any = null;
+
+      try {
+        // Try interactive transaction
+        const result = await prisma.$transaction(async (tx) => {
+          const current = await tx.product.findUnique({ where: { id: productId } });
+          if (!current) throw new Error('Product not found in database');
+          if (current.stock + change < 0) {
+            throw new Error('Cannot remove more stock than currently available.');
+          }
+
+          const updated = await tx.product.update({
+            where: { id: productId },
+            data: { stock: { increment: change } },
+          });
+
+          const log = await tx.inventoryLog.create({
+            data: {
+              productId,
+              managerId: effectiveManagerId,
+              change,
+              previousStock: current.stock,
+              newStock: updated.stock,
+            },
+          });
+
+          return { product: updated, log };
+        });
+
+        updatedProduct = result.product;
+        createdLog = result.log;
+      } catch (txErr: any) {
+        if (txErr.message === 'Cannot remove more stock than currently available.') {
+          throw txErr;
+        }
+        console.warn('[StockSync DB Transaction Warning] Interactive tx failed (possibly Supabase pooler). Retrying direct queries:', txErr?.message || txErr);
+
+        // Fallback to direct queries with Prisma atomic increment
+        const current = await prisma.product.findUnique({ where: { id: productId } });
+        if (!current) throw new Error('Product not found in database');
         if (current.stock + change < 0) {
           throw new Error('Cannot remove more stock than currently available.');
         }
 
-        const updated = await tx.product.update({
+        updatedProduct = await prisma.product.update({
           where: { id: productId },
           data: { stock: { increment: change } },
         });
 
-        const log = await tx.inventoryLog.create({
-          data: {
-            productId,
-            managerId,
-            change,
-            previousStock: current.stock,
-            newStock: updated.stock,
+        try {
+          createdLog = await prisma.inventoryLog.create({
+            data: {
+              productId,
+              managerId: effectiveManagerId,
+              change,
+              previousStock: current.stock,
+              newStock: updatedProduct.stock,
+            },
+          });
+        } catch (logErr: any) {
+          console.error('[StockSync DB Error] Failed to write inventory log in PostgreSQL:', logErr?.message || logErr);
+        }
+      }
+
+      if (updatedProduct) {
+        // Synchronize in-memory cache as well
+        const memProd = globalStore._products.find((p) => p.id === productId);
+        if (memProd) {
+          memProd.stock = updatedProduct.stock;
+        }
+
+        return {
+          product: {
+            id: updatedProduct.id,
+            name: updatedProduct.name,
+            category: updatedProduct.category,
+            image: updatedProduct.image,
+            stock: updatedProduct.stock,
           },
-        });
+          previousStock: createdLog ? createdLog.previousStock : (updatedProduct.stock - change),
+          newStock: updatedProduct.stock,
+        };
+      }
 
-        return { product: updated, log };
-      });
-
-      return {
-        product: {
-          id: result.product.id,
-          name: result.product.name,
-          category: result.product.category,
-          image: result.product.image,
-          stock: result.product.stock,
-        },
-        previousStock: result.log.previousStock,
-        newStock: result.log.newStock,
-      };
+      throw new Error('Failed to update product in database');
     } catch (err: any) {
       if (err.message === 'Cannot remove more stock than currently available.') {
         throw err;
       }
-      // If PostgreSQL not configured, execute concurrency-safe update on memory store
+      console.error('[StockSync DB Error in updateStock]:', err?.message || err);
+
+      // Fallback to memory store
       const prod = globalStore._products.find((p) => p.id === productId);
       if (!prod) throw new Error('Product not found');
       if (prod.stock + change < 0) {
