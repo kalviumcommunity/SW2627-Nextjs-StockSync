@@ -12,19 +12,43 @@ import {
   Search,
 } from 'lucide-react';
 
+/**
+ * ============================================================================
+ * HistoryPage Component
+ * ============================================================================
+ * An audit trail screen providing complete transparency into all inventory
+ * movements across managers.
+ * 
+ * Features & Requirements:
+ *  - FR-11: Full chronological history log table with Manager, Product, Delta, Previous/New Stock, and Timestamp.
+ *  - Filter by search keyword, individual manager, or transaction type (Added / Removed).
+ *  - Real-time stock movement metrics at the top.
+ */
 export default function HistoryPage() {
+  // ==========================================================================
+  // SECTION 1: Local State Management
+  // ==========================================================================
+  
+  // List of inventory change records
   const [logs, setLogs] = useState<InventoryLogItem[]>([]);
+  
+  // Aggregate movement KPIs
   const [metrics, setMetrics] = useState({
     totalUpdates: 1284,
     todayUpdates: 47,
     addedStock: 102,
     removedStock: -39,
   });
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedManager, setSelectedManager] = useState('All');
-  const [selectedType, setSelectedType] = useState('All');
-  const [sortOrder, setSortOrder] = useState('newest');
+  
+  // Multi-criteria filter state
+  const [searchQuery, setSearchQuery] = useState('');              // Search query for product or manager
+  const [selectedManager, setSelectedManager] = useState('All');    // Filter by specific manager name
+  const [selectedType, setSelectedType] = useState('All');          // Filter by movement type (Added / Removed)
+  const [sortOrder, setSortOrder] = useState('newest');             // Chronological sort direction
 
+  // ==========================================================================
+  // SECTION 2: Data Fetching Lifecycle
+  // ==========================================================================
   useEffect(() => {
     fetch('/api/history')
       .then((res) => res.json())
@@ -34,9 +58,18 @@ export default function HistoryPage() {
           setMetrics(data.metrics);
         }
       })
-      .catch(() => {});
+      .catch((err) => {
+        console.error('Failed to fetch inventory audit logs:', err);
+      });
   }, []);
 
+  // ==========================================================================
+  // SECTION 3: Helper Functions & Filtering Logic
+  // ==========================================================================
+  
+  /**
+   * Generates a 2-letter avatar initials string from a full name (e.g., 'Manager B' -> 'MB')
+   */
   const getInitials = (name: string) => {
     return name
       .split(' ')
@@ -46,7 +79,9 @@ export default function HistoryPage() {
       .substring(0, 2) || 'MB';
   };
 
-  // Filter logs
+  /**
+   * Applies search, manager, and transaction type filters
+   */
   const filteredLogs = logs.filter((log) => {
     const matchesSearch =
       log.productName.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -63,17 +98,25 @@ export default function HistoryPage() {
     return matchesSearch && matchesManager && matchesType;
   });
 
+  // ==========================================================================
+  // SECTION 4: Component Render & JSX Structure
+  // ==========================================================================
   return (
     <div>
-      {/* 1. Header */}
+      {/* -------------------------------------------------------------------- */}
+      {/* 1. Header Section: Title & Subtitle                                  */}
+      {/* -------------------------------------------------------------------- */}
       <DashboardHeader
         title="Inventory History"
         subtitle="Track every successful stock change made by managers."
       />
 
       <div className="p-8 max-w-7xl mx-auto space-y-8">
-        {/* 2. Top 4 Metric Cards */}
+        {/* ------------------------------------------------------------------ */}
+        {/* 2. Top Summary Metrics Cards (Movement KPIs)                       */}
+        {/* ------------------------------------------------------------------ */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+          {/* Card 1: Total All-Time Updates */}
           <MetricCard
             label="Total Updates"
             value="1,284"
@@ -81,6 +124,7 @@ export default function HistoryPage() {
             iconBg="bg-purple-50"
             iconColor="text-purple-600"
           />
+          {/* Card 2: Today's Updates */}
           <MetricCard
             label="Today's Updates"
             value="47"
@@ -88,6 +132,7 @@ export default function HistoryPage() {
             iconBg="bg-purple-50"
             iconColor="text-purple-600"
           />
+          {/* Card 3: Added Stock Units */}
           <MetricCard
             label="Added Stock"
             value="+102"
@@ -95,6 +140,7 @@ export default function HistoryPage() {
             iconBg="bg-emerald-50"
             iconColor="text-emerald-600"
           />
+          {/* Card 4: Removed Stock Units */}
           <MetricCard
             label="Removed Stock"
             value="-39"
@@ -104,8 +150,11 @@ export default function HistoryPage() {
           />
         </div>
 
-        {/* 3. Search & Filter Bar */}
+        {/* ------------------------------------------------------------------ */}
+        {/* 3. Search & Multi-Filter Control Toolbar                           */}
+        {/* ------------------------------------------------------------------ */}
         <div className="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+          {/* Search Input Filter */}
           <div className="relative flex-1 min-w-[240px]">
             <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
@@ -118,7 +167,7 @@ export default function HistoryPage() {
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
-            {/* Manager Filter */}
+            {/* Filter by Manager Dropdown */}
             <div className="relative">
               <select
                 value={selectedManager}
@@ -135,7 +184,7 @@ export default function HistoryPage() {
               </div>
             </div>
 
-            {/* Type Filter */}
+            {/* Filter by Type Dropdown (Added / Removed) */}
             <div className="relative">
               <select
                 value={selectedType}
@@ -151,7 +200,7 @@ export default function HistoryPage() {
               </div>
             </div>
 
-            {/* Sort Order */}
+            {/* Sort Direction Dropdown */}
             <div className="relative">
               <select
                 value={sortOrder}
@@ -168,10 +217,13 @@ export default function HistoryPage() {
           </div>
         </div>
 
-        {/* 4. Inventory Logs Table */}
+        {/* ------------------------------------------------------------------ */}
+        {/* 4. Complete Audit History Log Data Table                           */}
+        {/* ------------------------------------------------------------------ */}
         <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
+              {/* Table Column Headers */}
               <thead className="bg-slate-50/70 border-b border-slate-100 text-slate-500 font-semibold uppercase tracking-wider">
                 <tr>
                   <th className="py-4 px-6">Manager</th>
@@ -183,6 +235,7 @@ export default function HistoryPage() {
                   <th className="py-4 px-6">Status</th>
                 </tr>
               </thead>
+              {/* Table Rows Body */}
               <tbody className="divide-y divide-slate-100 text-slate-700 font-medium">
                 {filteredLogs.length === 0 ? (
                   <tr>
@@ -193,7 +246,7 @@ export default function HistoryPage() {
                 ) : (
                   filteredLogs.map((log) => (
                     <tr key={log.id} className="hover:bg-slate-50/50 transition-colors">
-                      {/* Manager */}
+                      {/* Manager Identification */}
                       <td className="py-4 px-6">
                         <div className="flex items-center gap-2.5">
                           <div className="w-7 h-7 rounded-lg bg-slate-100 text-slate-700 font-bold text-[11px] flex items-center justify-center border border-slate-200">
@@ -205,12 +258,12 @@ export default function HistoryPage() {
                         </div>
                       </td>
 
-                      {/* Product */}
+                      {/* Product Name */}
                       <td className="py-4 px-6 text-slate-900 font-semibold">
                         {log.productName}
                       </td>
 
-                      {/* Change */}
+                      {/* Delta Change (+ / -) */}
                       <td className="py-4 px-6 font-bold">
                         <span
                           className={log.change > 0 ? 'text-emerald-600' : 'text-rose-600'}
@@ -219,18 +272,18 @@ export default function HistoryPage() {
                         </span>
                       </td>
 
-                      {/* Previous Stock */}
+                      {/* Previous Stock Count */}
                       <td className="py-4 px-6 text-slate-500">{log.previousStock}</td>
 
-                      {/* New Stock */}
+                      {/* Authoritative New Stock Count */}
                       <td className="py-4 px-6 font-bold text-slate-900">
                         {log.newStock}
                       </td>
 
-                      {/* Time */}
+                      {/* Timestamp */}
                       <td className="py-4 px-6 text-slate-500">{log.createdAt}</td>
 
-                      {/* Status */}
+                      {/* Transaction Status Badge */}
                       <td className="py-4 px-6">
                         <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200/60">
                           <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
