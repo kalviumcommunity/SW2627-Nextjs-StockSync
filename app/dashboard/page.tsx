@@ -104,7 +104,7 @@ export default function DashboardPage() {
             iconColor="text-indigo-600"
           />
           <MetricCard
-            label="Total Users"
+            label="Total Managers"
             value={metrics.totalManagers}
             subtext={`${metrics.totalManagers} registered managers`}
             icon={Box}
