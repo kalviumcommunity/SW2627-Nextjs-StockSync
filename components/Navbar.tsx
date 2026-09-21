@@ -1,8 +1,24 @@
+/**
+ * File task: Top navigation bar used across public pages and app shell transitions.
+ * Used by: app/page.tsx and other public-facing screens that need a shared header.
+ * Important code snippets:
+ *   1. Brand Logo and navigation links for Home, Features, Login, and Register.
+ *   2. Responsive mobile menu styling and link layout.
+ *   3. CTA button handling for the main auth flow.
+ */
+
 'use client';
 
 import React from 'react';
 import Link from 'next/link';
 import Logo from './Logo';
+
+// Task: Shared navigation bar for public pages.
+// Used by: Used by the landing page and other public screens.
+// Important code snippets:
+// 1. Logo and navigation links
+// 2. Responsive menu structure
+// 3. Primary call-to-action button
 
 export default function Navbar() {
   return (

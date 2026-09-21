@@ -1,3 +1,12 @@
+/**
+ * File task: Public landing page for StockSync with marketing content and sign-up calls to action.
+ * Used by: Next.js route / mapped directly from app/page.tsx.
+ * Important code snippets:
+ *   1. Navbar and Footer layout placement for the landing page.
+ *   2. Hero section with CTA buttons to /register and /login.
+ *   3. Feature cards describing inventory management capabilities.
+ */
+
 import React from 'react';
 import Link from 'next/link';
 import Navbar from '@/components/Navbar';
@@ -12,6 +21,8 @@ import {
   Plus,
   Minus,
 } from 'lucide-react';
+
+// Public landing page: hero section, feature cards, and CTA links.
 
 export default function LandingPage() {
   return (

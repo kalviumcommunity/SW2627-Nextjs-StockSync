@@ -1,3 +1,12 @@
+/**
+ * File task: Manager profile editing screen for name and email information.
+ * Used by: app/dashboard/layout.tsx and authenticated dashboard navigation.
+ * Important code snippets:
+ *   1. Current manager data retrieval from /api/auth/me.
+ *   2. Form state for updating profile information.
+ *   3. Save action to /api/profile and success feedback UI.
+ */
+
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -12,6 +21,13 @@ import {
   Monitor,
   CheckCircle2,
 } from 'lucide-react';
+
+// Task: Manager profile management screen.
+// Used by: Used by the dashboard profile route.
+// Important code snippets:
+// 1. Manager data retrieval from the auth route
+// 2. Editable profile form state
+// 3. Save action and success message handling
 
 export default function ProfilePage() {
   const [name, setName] = useState('Manager B');

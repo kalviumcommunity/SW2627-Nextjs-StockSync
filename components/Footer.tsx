@@ -1,6 +1,22 @@
+/**
+ * File task: Shared footer section used by landing and public pages.
+ * Used by: app/page.tsx and any page needing consistent footer branding.
+ * Important code snippets:
+ *   1. Brand, tagline, and quick links markup.
+ *   2. Social or support section layout.
+ *   3. Footer alignment with app-wide spacing rules.
+ */
+
 import React from 'react';
 import Link from 'next/link';
 import Logo from './Logo';
+
+// Task: Shared footer block for public-facing screens.
+// Used by: Used by the landing page layout.
+// Important code snippets:
+// 1. Branding and quick links
+// 2. Footer layout structure
+// 3. Closing section formatting
 
 export default function Footer() {
   return (

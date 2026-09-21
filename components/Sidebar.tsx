@@ -1,3 +1,12 @@
+/**
+ * File task: Dashboard sidebar controlling navigation between inventory, history, and profile.
+ * Used by: app/dashboard/layout.tsx.
+ * Important code snippets:
+ *   1. usePathname() based active navigation highlighting.
+ *   2. Route list for Dashboard, History, and Profile.
+ *   3. Logout button with router navigation and cleanup.
+ */
+
 'use client';
 
 import React from 'react';
@@ -10,6 +19,13 @@ interface SidebarProps {
   managerName?: string;
   managerEmail?: string;
 }
+
+// Task: Dashboard sidebar for route navigation and logout.
+// Used by: Used by the dashboard layout shell.
+// Important code snippets:
+// 1. Active route highlighting via pathname
+// 2. Navigation menu items
+// 3. Logout flow and redirect behavior
 
 export default function Sidebar({
   managerName = 'Manager B',

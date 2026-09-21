@@ -1,3 +1,19 @@
+// Task: Tailwind styling configuration for the app theme.
+// Used by: Used by all front-end component styling across the app.
+// Important code snippets:
+// 1. Content paths for app files
+// 2. Custom theme and brand colors
+// 3. Tailwind plugin setup
+
+/**
+ * File task: Tailwind theme and content configuration for the StockSync front-end design system.
+ * Used by: app/*.tsx files and all components using utility classes.
+ * Important code snippets:
+ *   1. content paths for app and component files.
+ *   2. Custom brand colors and theme extensions.
+ *   3. Tailwind plugin and safe-list style configuration.
+ */
+
 import type { Config } from "tailwindcss";
 
 const config: Config = {

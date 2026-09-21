@@ -1,3 +1,12 @@
+/**
+ * File task: Registration form for creating new manager accounts and verification emails.
+ * Used by: Public onboarding flow from landing page CTA and navigation links.
+ * Important code snippets:
+ *   1. Full name, email, password, and confirmation validation.
+ *   2. call to /api/auth/register and success messaging.
+ *   3. Redirect flow to verify-email or login after registration.
+ */
+
 'use client';
 
 import React, { useState } from 'react';
@@ -5,6 +14,13 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import Logo from '@/components/Logo';
 import { Eye, EyeOff, AlertCircle } from 'lucide-react';
+
+// Task: Manager registration page for account creation.
+// Used by: Used by the public onboarding flow and landing page CTA.
+// Important code snippets:
+// 1. Registration form state and validation
+// 2. API request to create the manager account
+// 3. Success and verification flow messaging
 
 export default function RegisterPage() {
   const router = useRouter();

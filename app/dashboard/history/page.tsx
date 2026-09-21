@@ -1,3 +1,12 @@
+/**
+ * File task: Inventory history screen showing log records and manager activity.
+ * Used by: app/dashboard/layout.tsx as a protected route.
+ * Important code snippets:
+ *   1. Fetching logs from /api/history.
+ *   2. Filtering by manager and log type with search input.
+ *   3. MetricCard summary cards for total operations and success rate.
+ */
+
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -11,6 +20,13 @@ import {
   TrendingDown,
   Search,
 } from 'lucide-react';
+
+// Task: Inventory activity history page for logs and operations.
+// Used by: Used by the dashboard history route.
+// Important code snippets:
+// 1. Activity log fetch from the history API
+// 2. Search and filter controls for manager and event type
+// 3. Metrics cards summarizing recent inventory changes
 
 export default function HistoryPage() {
   const [logs, setLogs] = useState<InventoryLogItem[]>([]);

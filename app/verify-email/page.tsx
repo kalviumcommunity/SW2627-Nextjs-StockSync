@@ -1,8 +1,24 @@
+/**
+ * File task: Email verification landing page that confirms account activation.
+ * Used by: The email link generated in app/api/auth/register/route.ts.
+ * Important code snippets:
+ *   1. URL token extraction from the verification query string.
+ *   2. Verification request to /api/auth/verify-email.
+ *   3. Success/error status rendering for the user.
+ */
+
 'use client';
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Logo from '@/components/Logo';
+
+// Task: Email verification page after signup.
+// Used by: Used by the link generated in the registration process.
+// Important code snippets:
+// 1. Token extraction from the URL
+// 2. Verification request to the email API
+// 3. Success and failure UI states
 
 export default function VerifyEmailPage() {
   const [message, setMessage] = useState('Verifying your email...');

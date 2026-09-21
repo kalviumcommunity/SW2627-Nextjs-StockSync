@@ -1,3 +1,12 @@
+/**
+ * File task: Main inventory dashboard for listing products and stock metrics.
+ * Used by: app/dashboard/layout.tsx and authenticated dashboard routes.
+ * Important code snippets:
+ *   1. fetchProducts() data load from /api/products.
+ *   2. Search and filter controls for category and stock status.
+ *   3. ProductCard grid with live stock update handling.
+ */
+
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -12,6 +21,8 @@ import {
   RotateCw,
   Search,
 } from 'lucide-react';
+
+// Dashboard overview: loads inventory, metrics, and product filters.
 
 export default function DashboardPage() {
   const [products, setProducts] = useState<ProductItem[]>([]);
@@ -28,6 +39,7 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
+  // Fetch latest products and metrics from the dashboard API.
   const fetchProducts = async () => {
     try {
       const res = await fetch('/api/products');
@@ -48,11 +60,13 @@ export default function DashboardPage() {
     fetchProducts();
   }, []);
 
+  // Refresh the dashboard inventory and summary metrics.
   const handleRefresh = () => {
     setRefreshing(true);
     fetchProducts();
   };
 
+  // Update totals and out-of-stock count after a product stock change.
   const handleStockUpdated = (updatedProd: ProductItem) => {
     setProducts((prev) => {
       const next = prev.map((p) => (p.id === updatedProd.id ? updatedProd : p));

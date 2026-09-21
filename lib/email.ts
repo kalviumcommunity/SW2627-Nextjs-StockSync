@@ -1,6 +1,22 @@
+/**
+ * File task: Email delivery helper for sending verification links through Resend.
+ * Used by: app/api/auth/register/route.ts when a manager signs up.
+ * Important code snippets:
+ *   1. Resend client initialization using API key.
+ *   2. Verification URL construction with APP_URL.
+ *   3. sendVerificationEmail() helper for account confirmation.
+ */
+
 import { Resend } from 'resend';
 
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
+
+// Task: Verification email sender using Resend.
+// Used by: Used by the registration API endpoint.
+// Important code snippets:
+// 1. Resend client initialization
+// 2. Verification URL construction
+// 3. sendVerificationEmail helper
 
 export async function sendVerificationEmail(email: string, name: string, token: string) {
   if (!resend || !process.env.EMAIL_FROM || !process.env.APP_URL) {

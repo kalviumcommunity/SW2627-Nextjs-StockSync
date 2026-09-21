@@ -1,3 +1,12 @@
+/**
+ * File task: Seed file that creates sample product and manager data for a fresh local setup.
+ * Used by: project startup scripts via npm run seed.
+ * Important code snippets:
+ *   1. Prisma client setup and database connection.
+ *   2. Manager records with default demo credentials.
+ *   3. Product insertion script for the demo inventory catalog.
+ */
+
 const { PrismaClient } = require('@prisma/client');
 const bcrypt = require('bcryptjs');
 
@@ -17,6 +26,13 @@ const initialProducts = [
   { id: 'prod-11', name: 'Corn Flakes', category: 'Breakfast', image: 'https://images.unsplash.com/photo-1521483451569-e33803c0330c?w=300&q=80', stock: 22 },
   { id: 'prod-12', name: 'Black Tea', category: 'Beverages', image: 'https://images.unsplash.com/photo-1576092768241-dec231879fc3?w=300&q=80', stock: 67 },
 ];
+
+// Task: Seed script for sample product and manager data.
+// Used by: Used by the project seed command via npm run seed.
+// Important code snippets:
+// 1. Database client setup
+// 2. Demo manager creation
+// 3. Sample inventory entries
 
 async function main() {
   console.log('Seeding initial managers and products...');

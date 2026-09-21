@@ -1,3 +1,12 @@
+/**
+ * File task: Login form for managers and session creation flow.
+ * Used by: User access from public navigation and redirect after auth.
+ * Important code snippets:
+ *   1. Email and password state plus validation errors.
+ *   2. Password visibility toggle and form submission handling.
+ *   3. API call to /api/auth/login and redirect to dashboard.
+ */
+
 'use client';
 
 import React, { useState } from 'react';
@@ -5,6 +14,13 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import Logo from '@/components/Logo';
 import { Eye, EyeOff, AlertCircle } from 'lucide-react';
+
+// Task: Manager login form and authentication flow.
+// Used by: Used by users navigating to the /login route.
+// Important code snippets:
+// 1. Email and password validation state
+// 2. Password visibility toggle
+// 3. Login API call and dashboard redirect
 
 export default function LoginPage() {
   const router = useRouter();

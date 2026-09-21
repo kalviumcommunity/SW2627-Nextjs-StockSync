@@ -1,8 +1,24 @@
+/**
+ * File task: API endpoint for validating login credentials and returning a signed session token.
+ * Used by: app/login/page.tsx and the login form submission flow.
+ * Important code snippets:
+ *   1. Input parsing and manager lookup by email.
+ *   2. Password verification with verifyPassword().
+ *   3. JWT token generation and cookie response.
+ */
+
 import { NextResponse } from 'next/server';
 import { DataService } from '@/lib/dataService';
 import { verifyPassword, signToken } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
+
+// Task: Login API endpoint for validating credentials and returning a session token.
+// Used by: Used by the login page submission flow.
+// Important code snippets:
+// 1. Credential lookup by email
+// 2. Password verification and token generation
+// 3. Cookie-based session response
 
 export async function POST(req: Request) {
   try {

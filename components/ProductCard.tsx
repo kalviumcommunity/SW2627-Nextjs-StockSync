@@ -1,3 +1,12 @@
+/**
+ * File task: Inventory card for product stock display and stock update actions.
+ * Used by: app/dashboard/page.tsx as the main product listing element.
+ * Important code snippets:
+ *   1. Quantity input and validation helper logic.
+ *   2. Add/remove stock update handler with optimistic UI state.
+ *   3. Undo flow and success/error messaging for modified inventory.
+ */
+
 'use client';
 
 import React, { useState } from 'react';
@@ -8,6 +17,8 @@ interface ProductCardProps {
   product: ProductItem;
   onStockUpdated?: (updatedProduct: ProductItem) => void;
 }
+
+// Product card: stock status, quantity controls, and stock update actions.
 
 export default function ProductCard({ product, onStockUpdated }: ProductCardProps) {
   const [qty, setQty] = useState<number>(0);
@@ -25,6 +36,7 @@ export default function ProductCard({ product, onStockUpdated }: ProductCardProp
     setLocalStock(product.stock);
   }, [product.stock]);
 
+  // Validate qty input and block invalid stock removals.
   const handleQtyChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = parseInt(e.target.value, 10);
     const newQty = isNaN(val) ? 0 : Math.max(0, val);
@@ -37,6 +49,7 @@ export default function ProductCard({ product, onStockUpdated }: ProductCardProp
     }
   };
 
+  // Send add/remove stock request and apply optimistic UI update.
   const handleUpdate = async (changeType: 'add' | 'remove') => {
     if (qty <= 0) return;
 
@@ -87,6 +100,7 @@ export default function ProductCard({ product, onStockUpdated }: ProductCardProp
     }
   };
 
+  // Reverse the previous stock change using the opposite delta.
   const handleUndo = async () => {
     if (!updateNotice || isUndoing) return;
 
