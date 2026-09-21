@@ -1,25 +1,42 @@
+/**
+ * File task: Inventory card for product stock display and stock update actions.
+ * Used by: app/dashboard/page.tsx as the main product listing element.
+ * Important code snippets:
+ *   1. Quantity input and validation helper logic.
+ *   2. Add/remove stock update handler with optimistic UI state.
+ *   3. Undo flow and success/error messaging for modified inventory.
+ */
+
 'use client';
 
 import React, { useState } from 'react';
 import { ProductItem } from '@/lib/dataService';
-import { Plus, Minus, XCircle, Loader2 } from 'lucide-react';
+import { Plus, Minus, XCircle, Loader2, CheckCircle2 } from 'lucide-react';
 
 interface ProductCardProps {
   product: ProductItem;
   onStockUpdated?: (updatedProduct: ProductItem) => void;
 }
 
+// Product card: stock status, quantity controls, and stock update actions.
+
 export default function ProductCard({ product, onStockUpdated }: ProductCardProps) {
   const [qty, setQty] = useState<number>(0);
   const [localStock, setLocalStock] = useState<number>(product.stock);
   const [errorMessage, setErrorMessage] = useState<string>('');
   const [isUpdating, setIsUpdating] = useState<boolean>(false);
+  const [updateNotice, setUpdateNotice] = useState<{
+    change: number;
+    previousStock: number;
+  } | null>(null);
+  const [isUndoing, setIsUndoing] = useState<boolean>(false);
 
   // Sync if parent updates product
   React.useEffect(() => {
     setLocalStock(product.stock);
   }, [product.stock]);
 
+  // Validate qty input and block invalid stock removals.
   const handleQtyChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = parseInt(e.target.value, 10);
     const newQty = isNaN(val) ? 0 : Math.max(0, val);
@@ -32,6 +49,7 @@ export default function ProductCard({ product, onStockUpdated }: ProductCardProp
     }
   };
 
+  // Send add/remove stock request and apply optimistic UI update.
   const handleUpdate = async (changeType: 'add' | 'remove') => {
     if (qty <= 0) return;
 
@@ -70,6 +88,7 @@ export default function ProductCard({ product, onStockUpdated }: ProductCardProp
       setLocalStock(data.newStock);
       setQty(0);
       setIsUpdating(false);
+      setUpdateNotice({ change: changeAmount, previousStock });
       if (onStockUpdated) {
         onStockUpdated(data.product);
       }
@@ -78,6 +97,36 @@ export default function ProductCard({ product, onStockUpdated }: ProductCardProp
       setLocalStock(previousStock);
       setErrorMessage('Network error. Rolled back to previous confirmed stock.');
       setIsUpdating(false);
+    }
+  };
+
+  // Reverse the previous stock change using the opposite delta.
+  const handleUndo = async () => {
+    if (!updateNotice || isUndoing) return;
+
+    setIsUndoing(true);
+    try {
+      const res = await fetch(`/api/products/${product.id}/stock`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ change: -updateNotice.change }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        setErrorMessage(data.error || 'Unable to undo the update.');
+        return;
+      }
+
+      setLocalStock(data.newStock);
+      setUpdateNotice(null);
+      if (onStockUpdated) {
+        onStockUpdated(data.product);
+      }
+    } catch {
+      setErrorMessage('Network error. The update could not be undone.');
+    } finally {
+      setIsUndoing(false);
     }
   };
 
@@ -198,6 +247,49 @@ export default function ProductCard({ product, onStockUpdated }: ProductCardProp
           <span>Remove Stock</span>
         </button>
       </div>
+
+      {updateNotice && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/30 p-4 backdrop-blur-[2px]">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={`updated-title-${product.id}`}
+            className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-2xl ring-1 ring-slate-900/5"
+          >
+            <div className="flex items-start gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-emerald-600">
+                <CheckCircle2 className="h-5 w-5" />
+              </div>
+              <div>
+                <h2 id={`updated-title-${product.id}`} className="text-base font-bold text-slate-900">
+                  The product has been updated
+                </h2>
+                <p className="mt-1 text-xs leading-relaxed text-slate-500">
+                  Stock changed from {updateNotice.previousStock} to {localStock} units.
+                </p>
+              </div>
+            </div>
+            <div className="mt-6 grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={handleUndo}
+                disabled={isUndoing}
+                className="rounded-xl border border-slate-200 px-4 py-2.5 text-xs font-bold text-slate-700 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {isUndoing ? 'Undoing...' : 'Undo'}
+              </button>
+              <button
+                type="button"
+                onClick={() => setUpdateNotice(null)}
+                disabled={isUndoing}
+                className="rounded-xl bg-brand-600 px-4 py-2.5 text-xs font-bold text-white shadow-sm transition-colors hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                OK
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

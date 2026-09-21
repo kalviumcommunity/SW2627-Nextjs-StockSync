@@ -1,3 +1,12 @@
+/**
+ * File task: Registration form for creating new manager accounts and verification emails.
+ * Used by: Public onboarding flow from landing page CTA and navigation links.
+ * Important code snippets:
+ *   1. Full name, email, password, and confirmation validation.
+ *   2. call to /api/auth/register and success messaging.
+ *   3. Redirect flow to verify-email or login after registration.
+ */
+
 'use client';
 
 import React, { useState } from 'react';
@@ -5,6 +14,13 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import Logo from '@/components/Logo';
 import { Eye, EyeOff, AlertCircle } from 'lucide-react';
+
+// Task: Manager registration page for account creation.
+// Used by: Used by the public onboarding flow and landing page CTA.
+// Important code snippets:
+// 1. Registration form state and validation
+// 2. API request to create the manager account
+// 3. Success and verification flow messaging
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -16,6 +32,7 @@ export default function RegisterPage() {
 
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [generalError, setGeneralError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
   const [loading, setLoading] = useState(false);
 
   const validate = () => {
@@ -56,6 +73,7 @@ export default function RegisterPage() {
     }
 
     setLoading(true);
+    setSuccessMessage('');
     try {
       const res = await fetch('/api/auth/register', {
         method: 'POST',
@@ -70,7 +88,8 @@ export default function RegisterPage() {
         return;
       }
 
-      router.push('/dashboard');
+      setSuccessMessage(data.message || 'Account created. Check your email to verify your account.');
+      setLoading(false);
     } catch {
       setGeneralError('A network error occurred. Please try again.');
       setLoading(false);
@@ -94,6 +113,12 @@ export default function RegisterPage() {
           <div className="mb-6 p-3.5 rounded-xl bg-rose-50 border border-rose-200 flex items-center gap-2 text-sm text-rose-700">
             <AlertCircle className="w-4 h-4 flex-shrink-0" />
             <span>{generalError}</span>
+          </div>
+        )}
+
+        {successMessage && (
+          <div className="mb-6 p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-sm text-emerald-700">
+            {successMessage} <Link href="/login" className="font-semibold underline">Go to login</Link>
           </div>
         )}
 

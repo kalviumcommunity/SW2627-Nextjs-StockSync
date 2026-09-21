@@ -1,3 +1,12 @@
+/**
+ * File task: Header bar for authenticated management pages, including search and notices.
+ * Used by: app/dashboard/page.tsx, app/dashboard/history/page.tsx, app/dashboard/profile/page.tsx.
+ * Important code snippets:
+ *   1. User greeting and quick search controls.
+ *   2. Notification bell and dashboard utilities.
+ *   3. Page title and breadcrumb-like content rendering.
+ */
+
 'use client';
 
 import React from 'react';
@@ -9,6 +18,13 @@ interface DashboardHeaderProps {
   subtitle: string;
   managerName?: string;
 }
+
+// Task: Header bar for all protected dashboard pages.
+// Used by: Used by dashboard screens including overview, history, and profile.
+// Important code snippets:
+// 1. Page title and greeting UI
+// 2. Search and notification controls
+// 3. Header layout styling and action buttons
 
 export default function DashboardHeader({
   title,

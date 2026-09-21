@@ -1,5 +1,15 @@
+/**
+ * File task: Shared data access layer for inventory products, logs, managers, and database-safe stock updates.
+ * Used by: app/api/products/route.ts, app/api/history/route.ts, app/api/auth/register/route.ts, app/api/auth/login/route.ts, app/api/profile/route.ts, app/api/products/[id]/stock/route.ts.
+ * Important code snippets:
+ *   1. Product and log TypeScript interfaces for inventory data contracts.
+ *   2. globalStore fallback for in-memory development data.
+ *   3. getProducts(), getLogs(), updateStock(), and createManager() service methods.
+ */
+
 import { prisma } from './prisma';
 import bcrypt from 'bcryptjs';
+import { createHash } from 'crypto';
 
 export interface ProductItem {
   id: string;
@@ -29,6 +39,7 @@ export interface ManagerUser {
   name: string;
   email: string;
   passwordHash: string;
+  emailVerifiedAt?: Date | null;
   createdAt?: string | Date;
 }
 
@@ -92,7 +103,10 @@ if (!globalStore._managers) {
   ];
 }
 
+// Shared inventory and manager service used by API routes.
+
 export const DataService = {
+  // Return products from Prisma or the in-memory fallback.
   async getProducts(): Promise<ProductItem[]> {
     try {
       const dbProducts = await prisma.product.findMany({ orderBy: { name: 'asc' } });
@@ -111,9 +125,14 @@ export const DataService = {
     return globalStore._products;
   },
 
+  // Update stock safely with a transaction and inventory log.
   async updateStock(productId: string, change: number, managerId: string, managerName: string) {
     if (change === 0) {
       throw new Error('Stock change amount cannot be zero.');
+    }
+
+    if (!process.env.DATABASE_URL) {
+      throw new Error('DATABASE_URL is not configured. Inventory updates require a Supabase database connection.');
     }
 
     try {
@@ -158,39 +177,11 @@ export const DataService = {
       if (err.message === 'Cannot remove more stock than currently available.') {
         throw err;
       }
-      // If PostgreSQL not configured, execute concurrency-safe update on memory store
-      const prod = globalStore._products.find((p) => p.id === productId);
-      if (!prod) throw new Error('Product not found');
-      if (prod.stock + change < 0) {
-        throw new Error('Cannot remove more stock than currently available.');
-      }
-
-      const prev = prod.stock;
-      prod.stock += change;
-
-      const newLog: InventoryLogItem = {
-        id: `log-${Date.now()}`,
-        productId: prod.id,
-        productName: prod.name,
-        managerId,
-        managerName,
-        change,
-        previousStock: prev,
-        newStock: prod.stock,
-        createdAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        status: 'Successful',
-      };
-
-      globalStore._logs.unshift(newLog);
-
-      return {
-        product: { ...prod },
-        previousStock: prev,
-        newStock: prod.stock,
-      };
+      throw new Error(`Inventory update failed: ${err.message || 'database request failed.'}`);
     }
   },
 
+  // Return recent inventory activity logs for the history page.
   async getLogs(): Promise<InventoryLogItem[]> {
     try {
       const logs = await prisma.inventoryLog.findMany({
@@ -218,6 +209,7 @@ export const DataService = {
     return globalStore._logs;
   },
 
+  // Count managers for the dashboard KPI totals.
   async getManagersCount(): Promise<number> {
     try {
       const count = await prisma.manager.count();
@@ -228,6 +220,7 @@ export const DataService = {
     return globalStore._managers.length;
   },
 
+  // Look up a manager by email for login and auth checks.
   async findManagerByEmail(email: string): Promise<ManagerUser | null> {
     try {
       const mgr = await prisma.manager.findUnique({ where: { email } });
@@ -239,6 +232,7 @@ export const DataService = {
     return found || null;
   },
 
+  // Create a new manager account during registration.
   async createManager(name: string, email: string, passwordHash: string): Promise<ManagerUser> {
     try {
       const created = await prisma.manager.create({
@@ -258,6 +252,45 @@ export const DataService = {
     }
   },
 
+  // Create a hashed email verification token for a manager.
+  async createEmailVerificationToken(managerId: string, token: string, expiresAt: Date) {
+    return prisma.emailVerificationToken.create({
+      data: {
+        managerId,
+        tokenHash: createHash('sha256').update(token).digest('hex'),
+        expiresAt,
+      },
+    });
+  },
+
+  // Verify a manager email token and mark the account as confirmed.
+  async verifyEmail(token: string) {
+    const tokenHash = createHash('sha256').update(token).digest('hex');
+    return prisma.$transaction(async (tx) => {
+      const record = await tx.emailVerificationToken.findUnique({
+        where: { tokenHash },
+        include: { manager: true },
+      });
+
+      if (!record || record.usedAt || record.expiresAt < new Date()) {
+        throw new Error('This verification link is invalid or has expired.');
+      }
+
+      const manager = await tx.manager.update({
+        where: { id: record.managerId },
+        data: { emailVerifiedAt: new Date() },
+      });
+
+      await tx.emailVerificationToken.update({
+        where: { id: record.id },
+        data: { usedAt: new Date() },
+      });
+
+      return manager;
+    });
+  },
+
+  // Update manager profile name and email.
   async updateManager(id: string, name: string, email: string): Promise<ManagerUser> {
     try {
       const updated = await prisma.manager.update({

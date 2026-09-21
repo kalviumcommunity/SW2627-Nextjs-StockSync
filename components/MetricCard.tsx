@@ -1,3 +1,12 @@
+/**
+ * File task: Reusable summary card for dashboard metrics and KPIs.
+ * Used by: app/dashboard/page.tsx and app/dashboard/history/page.tsx.
+ * Important code snippets:
+ *   1. Generic metric title and value display.
+ *   2. Conditional icon and accent styling.
+ *   3. Shared layout for dashboard status overview cards.
+ */
+
 import React from 'react';
 import { LucideIcon } from 'lucide-react';
 
@@ -9,6 +18,13 @@ interface MetricCardProps {
   iconBg?: string;
   iconColor?: string;
 }
+
+// Task: Reusable metric summary card.
+// Used by: Used by dashboard overview and history pages.
+// Important code snippets:
+// 1. Card title and value props
+// 2. Icon and accent styling
+// 3. Dashboard KPI presentation layout
 
 export default function MetricCard({
   label,

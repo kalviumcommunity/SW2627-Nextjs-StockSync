@@ -1,3 +1,12 @@
+/**
+ * File task: Seed file that creates sample product and manager data for a fresh local setup.
+ * Used by: project startup scripts via npm run seed.
+ * Important code snippets:
+ *   1. Prisma client setup and database connection.
+ *   2. Manager records with default demo credentials.
+ *   3. Product insertion script for the demo inventory catalog.
+ */
+
 const { PrismaClient } = require('@prisma/client');
 const bcrypt = require('bcryptjs');
 
@@ -18,6 +27,13 @@ const initialProducts = [
   { id: 'prod-12', name: 'Black Tea', category: 'Beverages', image: 'https://images.unsplash.com/photo-1576092768241-dec231879fc3?w=300&q=80', stock: 67 },
 ];
 
+// Task: Seed script for sample product and manager data.
+// Used by: Used by the project seed command via npm run seed.
+// Important code snippets:
+// 1. Database client setup
+// 2. Demo manager creation
+// 3. Sample inventory entries
+
 async function main() {
   console.log('Seeding initial managers and products...');
 
@@ -25,14 +41,14 @@ async function main() {
 
   await prisma.manager.upsert({
     where: { email: 'manager.a@example.com' },
-    update: {},
-    create: { id: 'mgr-1', name: 'Manager A', email: 'manager.a@example.com', passwordHash },
+    update: { emailVerifiedAt: new Date() },
+    create: { id: 'mgr-1', name: 'Manager A', email: 'manager.a@example.com', passwordHash, emailVerifiedAt: new Date() },
   });
 
   await prisma.manager.upsert({
     where: { email: 'manager@example.com' },
-    update: {},
-    create: { id: 'mgr-2', name: 'Manager B', email: 'manager@example.com', passwordHash },
+    update: { emailVerifiedAt: new Date() },
+    create: { id: 'mgr-2', name: 'Manager B', email: 'manager@example.com', passwordHash, emailVerifiedAt: new Date() },
   });
 
   for (const prod of initialProducts) {

@@ -1,7 +1,23 @@
+/**
+ * File task: Protected dashboard frame with sidebar navigation and layout spacing.
+ * Used by: app/dashboard/page.tsx, app/dashboard/history/page.tsx, app/dashboard/profile/page.tsx.
+ * Important code snippets:
+ *   1. Sidebar rendering and pathname-aware navigation state.
+ *   2. Dashboard top content wrapper and main section.
+ *   3. Responsive layout that keeps protected pages consistent.
+ */
+
 'use client';
 
 import React, { useEffect, useState } from 'react';
 import Sidebar from '@/components/Sidebar';
+
+// Task: Protected dashboard layout with shared sidebar and content area.
+// Used by: Used by all protected dashboard pages.
+// Important code snippets:
+// 1. Sidebar navigation structure
+// 2. Active path awareness for menu items
+// 3. Main content container for dashboard pages
 
 export default function DashboardLayout({
   children,
